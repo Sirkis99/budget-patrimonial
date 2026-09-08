@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const comptes = [
   "Compte courant",
@@ -77,7 +77,14 @@ const categoriesRevenus = [
 ];
 
 export default function App() {
-  const [mouvements, setMouvements] = useState([]);
+  const [mouvements, setMouvements] = useState(() => {
+  const sauvegarde =
+    localStorage.getItem("budget-mouvements");
+
+  return sauvegarde
+    ? JSON.parse(sauvegarde)
+    : [];
+});
 
   const [form, setForm] = useState({
     date: new Date().toISOString().substring(0, 10),
@@ -87,6 +94,13 @@ export default function App() {
     montant: "",
     commentaire: "",
   });
+
+  useEffect(() => {
+    localStorage.setItem(
+      "budget-mouvements",
+      JSON.stringify(mouvements)
+    );
+  }, [mouvements]);
 
   function update(field, value) {
     setForm({
@@ -285,6 +299,26 @@ export default function App() {
       <hr />
 
       <h2>Mouvements</h2>
+
+      <button
+        style={{
+        marginBottom: "20px",
+        background: "red",
+        color: "white",
+      }}
+      onClick={() => {
+        if (
+          window.confirm(
+          "Supprimer tous les mouvements ?"
+        )
+      ) {
+      setMouvements([]);
+      }
+      }}
+    >
+      Vider la liste
+    </button>
+
 
       {mouvements.length === 0 ? (
         <p>Aucun mouvement.</p>
