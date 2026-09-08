@@ -38,10 +38,7 @@ const categories = {
     "Vacances",
   ],
 
-  Enfants: [
-    "Épargne enfants",
-    "Dépenses enfants",
-  ],
+  Enfants: ["Épargne enfants", "Dépenses enfants"],
 
   "Jardin / Maison": [
     "Paysagiste CESU",
@@ -71,7 +68,17 @@ const categories = {
   ],
 };
 
+const categoriesRevenus = [
+  "Salaire Thierry",
+  "Salaire Jennifer",
+  "SAP",
+  "Don parental",
+  "Autres revenus",
+];
+
 export default function App() {
+  const [mouvements, setMouvements] = useState([]);
+
   const [form, setForm] = useState({
     date: new Date().toISOString().substring(0, 10),
     libelle: "",
@@ -91,17 +98,57 @@ export default function App() {
   function enregistrer(e) {
     e.preventDefault();
 
-    console.log(form);
+    let montant = parseFloat(form.montant);
 
-    alert(
-      "✅ Mouvement saisi avec succès\\n\\n(étape suivante : stockage local)"
+    if (isNaN(montant)) {
+      alert("Montant invalide");
+      return;
+    }
+
+    if (!categoriesRevenus.includes(form.categorie)) {
+      montant = -Math.abs(montant);
+    } else {
+      montant = Math.abs(montant);
+    }
+
+    const nouveauMouvement = {
+      id: Date.now(),
+      ...form,
+      montant,
+    };
+
+    setMouvements([nouveauMouvement, ...mouvements]);
+
+    setForm({
+      date: new Date().toISOString().substring(0, 10),
+      libelle: "",
+      categorie: "Courses",
+      compte: "Compte courant",
+      montant: "",
+      commentaire: "",
+    });
+  }
+
+  function supprimer(id) {
+    setMouvements(
+      mouvements.filter((m) => m.id !== id)
     );
   }
+
+  const revenus = mouvements
+    .filter((m) => m.montant > 0)
+    .reduce((s, m) => s + m.montant, 0);
+
+  const depenses = mouvements
+    .filter((m) => m.montant < 0)
+    .reduce((s, m) => s + Math.abs(m.montant), 0);
+
+  const solde = revenus - depenses;
 
   return (
     <div
       style={{
-        maxWidth: "900px",
+        maxWidth: "1000px",
         margin: "auto",
         padding: "20px",
         fontFamily: "Arial",
@@ -109,53 +156,66 @@ export default function App() {
     >
       <h1>📊 Budget Patrimonial</h1>
 
-      <h2>Nouveau mouvement</h2>
-
       <form onSubmit={enregistrer}>
-        <div style={{ marginBottom: "15px" }}>
+        <div style={{ marginBottom: 15 }}>
           <label>Date</label>
           <br />
           <input
             type="date"
             value={form.date}
-            onChange={(e) => update("date", e.target.value)}
+            onChange={(e) =>
+              update("date", e.target.value)
+            }
           />
         </div>
 
-        <div style={{ marginBottom: "15px" }}>
+        <div style={{ marginBottom: 15 }}>
           <label>Libellé</label>
           <br />
           <input
             type="text"
             value={form.libelle}
-            onChange={(e) => update("libelle", e.target.value)}
+            onChange={(e) =>
+              update("libelle", e.target.value)
+            }
             style={{ width: "100%" }}
           />
         </div>
 
-        <div style={{ marginBottom: "15px" }}>
+        <div style={{ marginBottom: 15 }}>
           <label>Catégorie</label>
           <br />
           <select
             value={form.categorie}
-            onChange={(e) => update("categorie", e.target.value)}
+            onChange={(e) =>
+              update("categorie", e.target.value)
+            }
           >
-            {Object.entries(categories).map(([groupe, valeurs]) => (
-              <optgroup key={groupe} label={groupe}>
-                {valeurs.map((v) => (
-                  <option key={v}>{v}</option>
-                ))}
-              </optgroup>
-            ))}
+            {Object.entries(categories).map(
+              ([groupe, valeurs]) => (
+                <optgroup
+                  key={groupe}
+                  label={groupe}
+                >
+                  {valeurs.map((v) => (
+                    <option key={v}>
+                      {v}
+                    </option>
+                  ))}
+                </optgroup>
+              )
+            )}
           </select>
         </div>
 
-        <div style={{ marginBottom: "15px" }}>
+        <div style={{ marginBottom: 15 }}>
           <label>Compte</label>
           <br />
           <select
             value={form.compte}
-            onChange={(e) => update("compte", e.target.value)}
+            onChange={(e) =>
+              update("compte", e.target.value)
+            }
           >
             {comptes.map((c) => (
               <option key={c}>{c}</option>
@@ -163,46 +223,122 @@ export default function App() {
           </select>
         </div>
 
-        <div style={{ marginBottom: "15px" }}>
-          <label>Montant (€)</label>
+        <div style={{ marginBottom: 15 }}>
+          <label>Montant</label>
           <br />
           <input
             type="number"
             step="0.01"
             value={form.montant}
-            onChange={(e) => update("montant", e.target.value)}
+            onChange={(e) =>
+              update("montant", e.target.value)
+            }
           />
         </div>
 
-        <div style={{ marginBottom: "15px" }}>
+        <div style={{ marginBottom: 15 }}>
           <label>Commentaire</label>
           <br />
           <textarea
             rows="3"
             value={form.commentaire}
-            onChange={(e) => update("commentaire", e.target.value)}
+            onChange={(e) =>
+              update("commentaire", e.target.value)
+            }
             style={{ width: "100%" }}
           />
         </div>
 
         <button type="submit">
-          Enregistrer le mouvement
+          Enregistrer
         </button>
       </form>
 
-      <hr style={{ margin: "30px 0" }} />
+      <hr />
 
-      <h2>Aperçu</h2>
+      <h2>Résumé</h2>
 
-      <pre
-        style={{
-          background: "#f4f4f4",
-          padding: "15px",
-          borderRadius: "8px",
-        }}
-      >
-        {JSON.stringify(form, null, 2)}
-      </pre>
+      <p>
+        Revenus :
+        {" "}
+        <strong style={{ color: "green" }}>
+          + {revenus.toFixed(2)} €
+        </strong>
+      </p>
+
+      <p>
+        Dépenses :
+        {" "}
+        <strong style={{ color: "red" }}>
+          - {depenses.toFixed(2)} €
+        </strong>
+      </p>
+
+      <p>
+        Solde :
+        {" "}
+        <strong>
+          {solde.toFixed(2)} €
+        </strong>
+      </p>
+
+      <hr />
+
+      <h2>Mouvements</h2>
+
+      {mouvements.length === 0 ? (
+        <p>Aucun mouvement.</p>
+      ) : (
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+          }}
+        >
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Libellé</th>
+              <th>Catégorie</th>
+              <th>Compte</th>
+              <th>Montant</th>
+              <th></th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {mouvements.map((m) => (
+              <tr key={m.id}>
+                <td>{m.date}</td>
+                <td>{m.libelle}</td>
+                <td>{m.categorie}</td>
+                <td>{m.compte}</td>
+
+                <td
+                  style={{
+                    color:
+                      m.montant >= 0
+                        ? "green"
+                        : "red",
+                  }}
+                >
+                  {m.montant.toFixed(2)} €
+                </td>
+
+                <td>
+                  <button
+                    onClick={() =>
+                      supprimer(m.id)
+                    }
+                  >
+                    Supprimer
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
