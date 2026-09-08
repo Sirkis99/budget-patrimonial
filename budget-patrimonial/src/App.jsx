@@ -202,6 +202,34 @@ const [patrimoine, setPatrimoine] = useState(() => {
         fondsVoiture: 0,
       };
 });
+
+const liquidites =
+  patrimoine.compteCourant +
+  patrimoine.livretA;
+
+const placements =
+  patrimoine.assuranceVie +
+  patrimoine.pee +
+  patrimoine.per;
+
+const fondsVoiture =
+  patrimoine.fondsVoiture;
+
+const patrimoineTotal =
+  liquidites +
+  placements +
+  fondsVoiture;
+
+const pctLiquidites =
+  patrimoineTotal > 0
+    ? (liquidites / patrimoineTotal) * 100
+    : 0;
+
+const pctPlacements =
+  patrimoineTotal > 0
+    ? (placements / patrimoineTotal) * 100
+    : 0;
+
   const [mouvements, setMouvements] = useState(() => {
   const sauvegarde =
     localStorage.getItem("budget-mouvements");
@@ -227,6 +255,13 @@ const [patrimoine, setPatrimoine] = useState(() => {
       JSON.stringify(mouvements)
     );
   }, [mouvements]);
+
+useEffect(() => {
+  localStorage.setItem(
+    "budget-patrimoine",
+    JSON.stringify(patrimoine)
+  );
+}, [patrimoine]);
 
   useEffect(() => {
   localStorage.setItem(
@@ -483,6 +518,75 @@ const [patrimoine, setPatrimoine] = useState(() => {
     }}
   >
     <h2>Patrimoine</h2>
+
+<div
+  style={{
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+    marginBottom: "20px",
+  }}
+>
+  <div
+    style={{
+      backgroundColor: "#1565c0",
+      color: "white",
+      padding: "15px",
+      borderRadius: "10px",
+      minWidth: "180px",
+    }}
+  >
+    <strong>💰 Patrimoine total</strong>
+    <br />
+    {formatEuros(patrimoineTotal)} €
+  </div>
+
+  <div
+    style={{
+      backgroundColor: "#26a69a",
+      color: "white",
+      padding: "15px",
+      borderRadius: "10px",
+      minWidth: "180px",
+    }}
+  >
+<strong>💧 Liquidités</strong>
+<br />
+{formatEuros(liquidites)} €
+<br />
+{pctLiquidites.toFixed(1)} %
+  </div>
+
+  <div
+    style={{
+      backgroundColor: "#43a047",
+      color: "white",
+      padding: "15px",
+      borderRadius: "10px",
+      minWidth: "180px",
+    }}
+  >
+<strong>📈 Placements</strong>
+<br />
+{formatEuros(placements)} €
+<br />
+{pctPlacements.toFixed(1)} %
+  </div>
+
+  <div
+    style={{
+      backgroundColor: "#ef6c00",
+      color: "white",
+      padding: "15px",
+      borderRadius: "10px",
+      minWidth: "180px",
+    }}
+  >
+    <strong>🚗 Fonds voiture</strong>
+    <br />
+    {formatEuros(fondsVoiture)} €
+  </div>
+</div>
 
 <div
   style={{
