@@ -167,16 +167,41 @@ function exporterCSV(mouvements) {
   window.URL.revokeObjectURL(url);
 }
 
+function formatEuros(valeur) {
+  return Number(valeur).toLocaleString(
+    "fr-FR",
+    {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }
+  );
+}
+
+const cardStyle = {
+  backgroundColor: "#ffffff",
+  borderRadius: "12px",
+  padding: "15px",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+  marginBottom: "15px",
+};
+
  export default function App() {
   const [onglet, setOnglet] = useState("mouvements");
- const [patrimoine, setPatrimoine] = useState({
-  compteCourant: 5000,
-  livretA: 10000,
-  assuranceVie: 1500,
-  pee: 22000,
-  per: 0,
-  fondsVoiture: 0,
-}); 
+const [patrimoine, setPatrimoine] = useState(() => {
+  const sauvegarde =
+    localStorage.getItem("budget-patrimoine");
+
+  return sauvegarde
+    ? JSON.parse(sauvegarde)
+    : {
+        compteCourant: 5000,
+        livretA: 10000,
+        assuranceVie: 1500,
+        pee: 22000,
+        per: 0,
+        fondsVoiture: 0,
+      };
+});
   const [mouvements, setMouvements] = useState(() => {
   const sauvegarde =
     localStorage.getItem("budget-mouvements");
@@ -202,6 +227,13 @@ function exporterCSV(mouvements) {
       JSON.stringify(mouvements)
     );
   }, [mouvements]);
+
+  useEffect(() => {
+  localStorage.setItem(
+    "budget-patrimoine",
+    JSON.stringify(patrimoine)
+  );
+}, [patrimoine]);
 
   function update(field, value) {
     setForm({
@@ -452,110 +484,240 @@ function exporterCSV(mouvements) {
   >
     <h2>Patrimoine</h2>
 
-    <div style={{ marginBottom: "10px" }}>
-      <label>Compte courant</label>
-      <br />
-      <input
-        type="number"
-        value={patrimoine.compteCourant}
-        onChange={(e) =>
-          setPatrimoine({
-            ...patrimoine,
-            compteCourant: Number(e.target.value),
-          })
-        }
-      />
-    </div>
+<div
+  style={{
+    background:
+      "linear-gradient(135deg,#1565c0,#42a5f5)",
+    color: "white",
+    padding: "20px",
+    borderRadius: "15px",
+    marginBottom: "20px",
+  }}
+>
+  <h2 style={{ margin: 0 }}>
+    💰 Patrimoine Total
+  </h2>
 
-    <div style={{ marginBottom: "10px" }}>
-      <label>Livret A</label>
-      <br />
-      <input
-        type="number"
-        value={patrimoine.livretA}
-        onChange={(e) =>
-          setPatrimoine({
-            ...patrimoine,
-            livretA: Number(e.target.value),
-          })
-        }
-      />
-    </div>
+  <h1>
+    {formatEuros(
+      patrimoine.compteCourant +
+      patrimoine.livretA +
+      patrimoine.assuranceVie +
+      patrimoine.pee +
+      patrimoine.per +
+      patrimoine.fondsVoiture
+    )} €
+  </h1>
+</div>
 
-    <div style={{ marginBottom: "10px" }}>
-      <label>Assurance-vie</label>
-      <br />
-      <input
-        type="number"
-        value={patrimoine.assuranceVie}
-        onChange={(e) =>
-          setPatrimoine({
-            ...patrimoine,
-            assuranceVie: Number(e.target.value),
-          })
-        }
-      />
-    </div>
+<div style={cardStyle}>
+  <h3 style={{ margin: 0 }}>
+    💧 Compte courant
+  </h3>
 
-    <div style={{ marginBottom: "10px" }}>
-      <label>PEE</label>
-      <br />
-      <input
-        type="number"
-        value={patrimoine.pee}
-        onChange={(e) =>
-          setPatrimoine({
-            ...patrimoine,
-            pee: Number(e.target.value),
-          })
-        }
-      />
-    </div>
+  <p
+    style={{
+      fontSize: "24px",
+      color: "#1565c0",
+      fontWeight: "bold",
+    }}
+  >
+    {formatEuros(
+      patrimoine.compteCourant
+    )} €
+  </p>
 
-    <div style={{ marginBottom: "10px" }}>
-      <label>PER</label>
-      <br />
-      <input
-        type="number"
-        value={patrimoine.per}
-        onChange={(e) =>
-          setPatrimoine({
-            ...patrimoine,
-            per: Number(e.target.value),
-          })
-        }
-      />
-    </div>
+  <input
+    type="number"
+    value={patrimoine.compteCourant}
+    onChange={(e) =>
+      setPatrimoine({
+        ...patrimoine,
+        compteCourant: Number(
+          e.target.value
+        ),
+      })
+    }
+  />
+</div>
 
-    <div style={{ marginBottom: "10px" }}>
-      <label>Fonds voiture</label>
-      <br />
-      <input
-        type="number"
-        value={patrimoine.fondsVoiture}
-        onChange={(e) =>
-          setPatrimoine({
-            ...patrimoine,
-            fondsVoiture: Number(e.target.value),
-          })
-        }
-      />
-    </div>
 
+  <div style={cardStyle}>
+  <h3 style={{ margin: 0 }}>
+    🏦 Livret A
+  </h3>
+
+  <p
+    style={{
+      fontSize: "24px",
+      color: "#1565c0",
+      fontWeight: "bold",
+    }}
+  >
+    {formatEuros(
+      patrimoine.livretA
+    )} €
+  </p>
+
+  <input
+    type="number"
+    value={patrimoine.livretA}
+    onChange={(e) =>
+      setPatrimoine({
+        ...patrimoine,
+        livretA: Number(
+          e.target.value
+        ),
+      })
+    }
+  />
+</div>
+
+
+   <div style={cardStyle}>
+  <h3 style={{ margin: 0 }}>
+    🌱 Assurance-vie
+  </h3>
+
+  <p
+    style={{
+      fontSize: "24px",
+      color: "#1565c0",
+      fontWeight: "bold",
+    }}
+  >
+    {formatEuros(
+      patrimoine.assuranceVie
+    )} €
+  </p>
+
+  <input
+    type="number"
+    value={patrimoine.assuranceVie}
+    onChange={(e) =>
+      setPatrimoine({
+        ...patrimoine,
+        assuranceVie: Number(
+          e.target.value
+        ),
+      })
+    }
+  />
+</div>
+
+
+   <div style={cardStyle}>
+  <h3 style={{ margin: 0 }}>
+    📈 PEE
+  </h3>
+
+  <p
+    style={{
+      fontSize: "24px",
+      color: "#2e7d32",
+      fontWeight: "bold",
+    }}
+  >
+    {formatEuros(
+      patrimoine.pee
+    )} €
+  </p>
+
+  <input
+    type="number"
+    value={patrimoine.pee}
+    onChange={(e) =>
+      setPatrimoine({
+        ...patrimoine,
+        pee: Number(
+          e.target.value
+        ),
+      })
+    }
+  />
+</div>
+
+    <div style={cardStyle}>
+  <h3 style={{ margin: 0 }}>
+    🛡️ PER
+  </h3>
+
+  <p
+    style={{
+      fontSize: "24px",
+      color: "#2e7d32",
+      fontWeight: "bold",
+    }}
+  >
+    {formatEuros(
+      patrimoine.per
+    )} €
+  </p>
+
+  <input
+    type="number"
+    value={patrimoine.per}
+    onChange={(e) =>
+      setPatrimoine({
+        ...patrimoine,
+        per: Number(
+          e.target.value
+        ),
+      })
+    }
+  />
+</div>
+
+   <div style={cardStyle}>
+  <h3 style={{ margin: 0 }}>
+    🚗 Fonds voiture
+  </h3>
+
+  <p
+    style={{
+      fontSize: "24px",
+      color: "#2e7d32",
+      fontWeight: "bold",
+    }}
+  >
+    {formatEuros(
+      patrimoine.fondsVoiture
+    )} €
+  </p>
+
+  <input
+    type="number"
+    value={patrimoine.fondsVoiture}
+    onChange={(e) =>
+      setPatrimoine({
+        ...patrimoine,
+        fondsVoiture: Number(
+          e.target.value
+        ),
+      })
+    }
+  />
+</div>
     <hr />
 
-    <h3>
-      Total patrimoine :
-      {" "}
-      {(patrimoine.compteCourant +
-        patrimoine.livretA +
-        patrimoine.assuranceVie +
-        patrimoine.pee +
-        patrimoine.per +
-        patrimoine.fondsVoiture)
-        .toLocaleString("fr-FR")}
-      {" "}€
-    </h3>
+<h3
+  style={{
+    color: "#1565c0",
+    fontSize: "24px",
+  }}
+>
+  Total patrimoine :
+  {" "}
+  {formatEuros(
+    patrimoine.compteCourant +
+    patrimoine.livretA +
+    patrimoine.assuranceVie +
+    patrimoine.pee +
+    patrimoine.per +
+    patrimoine.fondsVoiture
+  )}
+  {" "}€
+</h3>
   </div>
 )}
       
