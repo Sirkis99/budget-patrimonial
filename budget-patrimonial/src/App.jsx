@@ -76,6 +76,53 @@ const categoriesRevenus = [
   "Autres revenus",
 ];
 
+function exporterCSV(mouvements) {
+  if (mouvements.length === 0) {
+    alert("Aucun mouvement à exporter");
+    return;
+  }
+
+  const entete =
+    "Date;Libelle;Categorie;Compte;Montant;Commentaire";
+
+  const lignes = mouvements.map((m) =>
+    [
+      m.date,
+      m.libelle,
+      m.categorie,
+      m.compte,
+      m.montant,
+      m.commentaire,
+    ].join(";")
+  );
+
+  const contenu = [entete, ...lignes].join("\n");
+
+const BOM = "\uFEFF";
+
+const blob = new Blob(
+  [BOM + contenu],
+  {
+    type: "text/csv;charset=utf-8;"
+  }
+);
+
+  const url =
+    window.URL.createObjectURL(blob);
+
+  const lien =
+    document.createElement("a");
+
+  lien.href = url;
+
+  lien.download =
+    "mouvements_budget.csv";
+
+  lien.click();
+
+  window.URL.revokeObjectURL(url);
+}
+
 export default function App() {
   const [mouvements, setMouvements] = useState(() => {
   const sauvegarde =
@@ -299,6 +346,21 @@ export default function App() {
       <hr />
 
       <h2>Mouvements</h2>
+
+      <button
+  onClick={() =>
+    exporterCSV(mouvements)
+  }
+  style={{
+    marginBottom: "20px",
+    background: "green",
+    color: "white",
+    padding: "10px",
+  }}
+>
+  Exporter CSV
+</button>
+
 
       <button
         style={{
