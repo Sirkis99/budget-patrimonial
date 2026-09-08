@@ -168,6 +168,15 @@ function exporterCSV(mouvements) {
 }
 
  export default function App() {
+  const [onglet, setOnglet] = useState("mouvements");
+ const [patrimoine, setPatrimoine] = useState({
+  compteCourant: 5000,
+  livretA: 10000,
+  assuranceVie: 1500,
+  pee: 22000,
+  per: 0,
+  fondsVoiture: 0,
+}); 
   const [mouvements, setMouvements] = useState(() => {
   const sauvegarde =
     localStorage.getItem("budget-mouvements");
@@ -253,16 +262,154 @@ function exporterCSV(mouvements) {
   const solde = revenus - depenses;
 
   return (
-    <div
-      style={{
-        maxWidth: "1000px",
-        margin: "auto",
-        padding: "20px",
-        fontFamily: "Arial",
-      }}
-    >
-      <h1>📊 Budget Patrimonial</h1>
+  <div
+    style={{
+      maxWidth: "1000px",
+      margin: "auto",
+      padding: "20px",
+      fontFamily: "Arial",
+    }}
+  >
+    <h1>📊 Budget Patrimonial</h1>
 
+    <div style={{ marginBottom: "20px" }}>
+      <button
+        onClick={() => setOnglet("mouvements")}
+        style={{ marginRight: "10px" }}
+      >
+        Mouvements
+      </button>
+
+      <button
+        onClick={() => setOnglet("patrimoine")}
+      >
+        Patrimoine
+      </button>
+    </div>
+
+<h2>
+  Onglet actif : {onglet}
+</h2>
+
+
+{onglet === "patrimoine" && (
+  <div
+    style={{
+      border: "1px solid #ccc",
+      padding: "20px",
+      marginBottom: "20px",
+      borderRadius: "8px",
+      backgroundColor: "#f8f8f8",
+    }}
+  >
+    <h2>Patrimoine</h2>
+
+    <div style={{ marginBottom: "10px" }}>
+      <label>Compte courant</label>
+      <br />
+      <input
+        type="number"
+        value={patrimoine.compteCourant}
+        onChange={(e) =>
+          setPatrimoine({
+            ...patrimoine,
+            compteCourant: Number(e.target.value),
+          })
+        }
+      />
+    </div>
+
+    <div style={{ marginBottom: "10px" }}>
+      <label>Livret A</label>
+      <br />
+      <input
+        type="number"
+        value={patrimoine.livretA}
+        onChange={(e) =>
+          setPatrimoine({
+            ...patrimoine,
+            livretA: Number(e.target.value),
+          })
+        }
+      />
+    </div>
+
+    <div style={{ marginBottom: "10px" }}>
+      <label>Assurance-vie</label>
+      <br />
+      <input
+        type="number"
+        value={patrimoine.assuranceVie}
+        onChange={(e) =>
+          setPatrimoine({
+            ...patrimoine,
+            assuranceVie: Number(e.target.value),
+          })
+        }
+      />
+    </div>
+
+    <div style={{ marginBottom: "10px" }}>
+      <label>PEE</label>
+      <br />
+      <input
+        type="number"
+        value={patrimoine.pee}
+        onChange={(e) =>
+          setPatrimoine({
+            ...patrimoine,
+            pee: Number(e.target.value),
+          })
+        }
+      />
+    </div>
+
+    <div style={{ marginBottom: "10px" }}>
+      <label>PER</label>
+      <br />
+      <input
+        type="number"
+        value={patrimoine.per}
+        onChange={(e) =>
+          setPatrimoine({
+            ...patrimoine,
+            per: Number(e.target.value),
+          })
+        }
+      />
+    </div>
+
+    <div style={{ marginBottom: "10px" }}>
+      <label>Fonds voiture</label>
+      <br />
+      <input
+        type="number"
+        value={patrimoine.fondsVoiture}
+        onChange={(e) =>
+          setPatrimoine({
+            ...patrimoine,
+            fondsVoiture: Number(e.target.value),
+          })
+        }
+      />
+    </div>
+
+    <hr />
+
+    <h3>
+      Total patrimoine :
+      {" "}
+      {(patrimoine.compteCourant +
+        patrimoine.livretA +
+        patrimoine.assuranceVie +
+        patrimoine.pee +
+        patrimoine.per +
+        patrimoine.fondsVoiture)
+        .toLocaleString("fr-FR")}
+      {" "}€
+    </h3>
+  </div>
+)}
       <form onSubmit={enregistrer}>
         <div style={{ marginBottom: 15 }}>
           <label>Date</label>
