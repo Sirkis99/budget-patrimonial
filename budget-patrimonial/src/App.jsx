@@ -82,48 +82,92 @@ function exporterCSV(mouvements) {
     return;
   }
 
-  const entete =
-    "Date;Libelle;Categorie;Compte;Montant;Commentaire";
+  const entete = [
+    "Date",
+    "Libellé",
+    "Catégorie",
+    "Sous-catégorie",
+    "Montant",
+    "Compte",
+    "Type",
+    "Identifiant",
+    "Commentaire",
+  ];
 
-  const lignes = mouvements.map((m) =>
-    [
-      m.date,
-      m.libelle,
-      m.categorie,
-      m.compte,
-      m.montant,
-      m.commentaire,
-    ].join(";")
+  function formaterDate(dateISO) {
+    const [annee, mois, jour] = dateISO.split("-");
+    return `${jour}/${mois}/${annee}`;
+  }
+
+  function protegerValeur(valeur) {
+    const texte = String(valeur ?? "");
+
+    return `"${texte.replaceAll('"', '""')}"`;
+  }
+
+  const lignes = mouvements.map((mouvement) => {
+    const montant = Number(mouvement.montant)
+      .toFixed(2);
+
+    const type =
+      Number(mouvement.montant) >= 0
+        ? "Revenu"
+        : "Dépense";
+
+    const valeurs = [
+      formaterDate(mouvement.date),
+      mouvement.libelle,
+      mouvement.categorie,
+      mouvement.sousCategorie,
+      montant,
+      mouvement.compte,
+      type,
+      mouvement.id,
+      mouvement.commentaire,
+    ];
+
+    return valeurs
+      .map(protegerValeur)
+      .join(";");
+  });
+
+  const contenuCSV = [
+    entete.map(protegerValeur).join(";"),
+    ...lignes,
+  ].join("\r\n");
+
+  const BOM = "\uFEFF";
+
+  const blob = new Blob(
+    [BOM + contenuCSV],
+    {
+      type: "text/csv;charset=utf-8;",
+    }
   );
 
-  const contenu = [entete, ...lignes].join("\n");
+  const url = window.URL.createObjectURL(blob);
 
-const BOM = "\uFEFF";
+  const lien = document.createElement("a");
 
-const blob = new Blob(
-  [BOM + contenu],
-  {
-    type: "text/csv;charset=utf-8;"
-  }
-);
-
-  const url =
-    window.URL.createObjectURL(blob);
-
-  const lien =
-    document.createElement("a");
+  const dateExport = new Date()
+    .toISOString()
+    .substring(0, 10);
 
   lien.href = url;
 
   lien.download =
-    "mouvements_budget.csv";
+    `operations_budget_${dateExport}.csv`;
+
+  document.body.appendChild(lien);
 
   lien.click();
+
+  document.body.removeChild(lien);
 
   window.URL.revokeObjectURL(url);
 }
 
-export default function App() {
+ export default function App() {
   const [mouvements, setMouvements] = useState(() => {
   const sauvegarde =
     localStorage.getItem("budget-mouvements");
@@ -137,6 +181,7 @@ export default function App() {
     date: new Date().toISOString().substring(0, 10),
     libelle: "",
     categorie: "Courses",
+    sousCategorie: "",
     compte: "Compte courant",
     montant: "",
     commentaire: "",
@@ -184,6 +229,7 @@ export default function App() {
       date: new Date().toISOString().substring(0, 10),
       libelle: "",
       categorie: "Courses",
+      sousCategorie: "",
       compte: "Compte courant",
       montant: "",
       commentaire: "",
@@ -268,6 +314,21 @@ export default function App() {
             )}
           </select>
         </div>
+
+<div style={{ marginBottom: 15 }}>
+  <label>Sous-catégorie</label>
+  <br />
+  <input
+    type="text"
+    placeholder="Ex : Leclerc, Total, Amazon..."
+    value={form.sousCategorie}
+    onChange={(e) =>
+      update("sousCategorie", e.target.value)
+    }
+    style={{ width: "100%" }}
+  />
+</div>
+
 
         <div style={{ marginBottom: 15 }}>
           <label>Compte</label>
@@ -396,6 +457,7 @@ export default function App() {
               <th>Date</th>
               <th>Libellé</th>
               <th>Catégorie</th>
+              <th>Sous-catégorie</th>
               <th>Compte</th>
               <th>Montant</th>
               <th></th>
@@ -408,6 +470,7 @@ export default function App() {
                 <td>{m.date}</td>
                 <td>{m.libelle}</td>
                 <td>{m.categorie}</td>
+                <td>{m.sousCategorie}</td>
                 <td>{m.compte}</td>
 
                 <td
