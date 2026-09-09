@@ -7,6 +7,7 @@ const comptes = [
   "PEE",
   "PER",
   "Fonds voiture",
+  "Fonds vacances",
 ];
 
 const categories = {
@@ -189,6 +190,16 @@ const cardStyle = {
   marginBottom: "15px",
 };
 
+const correspondanceComptes = {
+  "Compte courant": "compteCourant",
+  "Livret A": "livretA",
+  "Assurance-vie": "assuranceVie",
+  "PEE": "pee",
+  "PER": "per",
+  "Fonds voiture": "fondsVoiture",
+  "Fonds vacances": "fondsVacances",
+};
+
  export default function App() {
   const [onglet, setOnglet] = useState("mouvements");
 const [patrimoine, setPatrimoine] = useState(() => {
@@ -287,6 +298,90 @@ useEffect(() => {
       [field]: value,
     });
   }
+
+function appliquerImpactPatrimoine(mouvement) {
+  const cleSource =
+    correspondanceComptes[mouvement.compte];
+
+  if (!cleSource) {
+    alert("Compte source non reconnu");
+    return false;
+  }
+
+  const montant = Math.abs(
+    Number(mouvement.montant)
+  );
+
+  if (!Number.isFinite(montant)) {
+    alert("Montant invalide");
+    return false;
+  }
+
+  if (mouvement.type === "Revenu") {
+    setPatrimoine((ancien) => {
+      const nouveau = { ...ancien };
+
+      nouveau[cleSource] =
+        Number(ancien[cleSource] || 0) + montant;
+
+      return nouveau;
+    });
+
+    return true;
+  }
+
+  if (mouvement.type === "Dépense") {
+    setPatrimoine((ancien) => {
+      const nouveau = { ...ancien };
+
+      nouveau[cleSource] =
+        Number(ancien[cleSource] || 0) - montant;
+
+      return nouveau;
+    });
+
+    return true;
+  }
+
+  if (mouvement.type === "Transfert") {
+    const cleDestination =
+      correspondanceComptes[
+        mouvement.compteDestination
+      ];
+
+    if (!cleDestination) {
+      alert("Sélectionnez un compte destination");
+      return false;
+    }
+
+    if (cleSource === cleDestination) {
+      alert(
+        "Les comptes source et destination doivent être différents"
+      );
+      return false;
+    }
+
+    setPatrimoine((ancien) => {
+      const nouveau = { ...ancien };
+
+      nouveau[cleSource] =
+        Number(ancien[cleSource] || 0) - montant;
+
+      nouveau[cleDestination] =
+        Number(ancien[cleDestination] || 0) +
+        montant;
+
+      return nouveau;
+    });
+
+    return true;
+  }
+
+  alert("Type de mouvement non reconnu");
+  return false;
+}
+
+  
 
   function enregistrer(e) {
     e.preventDefault();
@@ -460,11 +555,7 @@ useEffect(() => {
       Transfert entre comptes
     </option>
   </select>
-  <p>Type actuel : {form.type}</p>
-  <p>
-  Test transfert :
-  {form.type === "Transfert" ? "OUI" : "NON"}
-</p>
+
 </div>
 
 
@@ -994,6 +1085,7 @@ useEffect(() => {
               <th>Sous-catégorie</th>
               <th>Compte</th>
               <th>Montant</th>
+              <th>CompteDestination</th>
               <th></th>
             </tr>
           </thead>
@@ -1007,7 +1099,7 @@ useEffect(() => {
                 <td>{m.categorie}</td>
                 <td>{m.sousCategorie}</td>
                 <td>{m.compte}</td>
-
+                <td>{m.compteDestination}</td>
                 <td
                   style={{
                     color:
