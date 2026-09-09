@@ -255,6 +255,7 @@ const pctPlacements =
     sousCategorie: "",
     type: "Dépense",
     compte: "Compte courant",
+    compteDestination: "",
     montant: "",
     commentaire: "",
   });
@@ -459,10 +460,17 @@ useEffect(() => {
       Transfert entre comptes
     </option>
   </select>
+  <p>Type actuel : {form.type}</p>
+  <p>
+  Test transfert :
+  {form.type === "Transfert" ? "OUI" : "NON"}
+</p>
 </div>
 
+
+
         <div style={{ marginBottom: 15 }}>
-          <label>Compte</label>hots
+          <label>Compte</label>
           <br />
           <select
             value={form.compte}
@@ -475,6 +483,31 @@ useEffect(() => {
             ))}
           </select>
         </div>
+
+       {form.type === "Transfert" && (
+  <div style={{ marginBottom: 15 }}>
+    <label>Compte destination</label>
+    <br />
+
+    <select
+      value={form.compteDestination}
+      onChange={(e) =>
+        update(
+          "compteDestination",
+          e.target.value
+        )
+      }
+    >
+      <option value="">
+        Sélectionner...
+      </option>
+
+      {comptes.map((c) => (
+        <option key={c}>{c}</option>
+      ))}
+    </select>
+  </div>
+)}     
 
         <div style={{ marginBottom: 15 }}>
           <label>Montant</label>
