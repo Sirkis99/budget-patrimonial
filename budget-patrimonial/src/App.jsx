@@ -15,6 +15,7 @@ const categories = {
     "Salaire Jennifer",
     "SAP",
     "Don parental",
+    "Remboursements santé",
     "Autres revenus",
   ],
 
@@ -34,6 +35,7 @@ const categories = {
     "Loisirs",
     "Vêtements",
     "Santé",
+    "Animaux",
     "Divers",
     "Vacances",
   ],
@@ -58,6 +60,7 @@ const categories = {
     "PEE",
     "PER",
     "Fonds voiture",
+    "Fonds vacances",
   ],
 
   Projets: [
@@ -73,6 +76,7 @@ const categoriesRevenus = [
   "Salaire Jennifer",
   "SAP",
   "Don parental",
+  "Remboursements santé",
   "Autres revenus",
 ];
 
@@ -200,6 +204,7 @@ const [patrimoine, setPatrimoine] = useState(() => {
         pee: 22000,
         per: 0,
         fondsVoiture: 0,
+        fondsVacances : 3500,
       };
 });
 
@@ -215,10 +220,14 @@ const placements =
 const fondsVoiture =
   patrimoine.fondsVoiture;
 
+const fondsVacances =
+  patrimoine.fondsVacances || 3500;
+  
 const patrimoineTotal =
   liquidites +
   placements +
-  fondsVoiture;
+  fondsVoiture+
+  fondsVacances;
 
 const pctLiquidites =
   patrimoineTotal > 0
@@ -611,6 +620,21 @@ useEffect(() => {
     <br />
     {formatEuros(fondsVoiture)} €
   </div>
+
+<div
+  style={{
+    backgroundColor: "#e91e63",
+    color: "white",
+    padding: "15px",
+    borderRadius: "10px",
+    minWidth: "180px",
+  }}
+>
+  <strong>🏖️ Fonds vacances</strong>
+  <br />
+  {formatEuros(fondsVacances)} €
+</div>
+
 </div>
 
 <div
@@ -622,7 +646,9 @@ useEffect(() => {
     borderRadius: "15px",
     marginBottom: "20px",
   }}
->
+ >
+
+
   <h2 style={{ margin: 0 }}>
     💰 Patrimoine Total
   </h2>
@@ -827,6 +853,38 @@ useEffect(() => {
     }
   />
 </div>
+
+<div style={cardStyle}>
+  <h3 style={{ margin: 0 }}>
+    🏖️ Fonds vacances
+  </h3>
+
+  <p
+    style={{
+      fontSize: "24px",
+      color: "#2e7d32",
+      fontWeight: "bold",
+    }}
+  >
+    {formatEuros(
+      patrimoine.fondsVacances || 3500
+    )} €
+  </p>
+
+  <input
+    type="number"
+    value={patrimoine.fondsVacances || 3500}
+    onChange={(e) =>
+      setPatrimoine({
+        ...patrimoine,
+        fondsVacances: Number(
+          e.target.value
+        ),
+      })
+    }
+  />
+</div>
+
     <hr />
 
 <h3
@@ -898,6 +956,7 @@ useEffect(() => {
             <tr>
               <th>Date</th>
               <th>Libellé</th>
+              <th>Type</th>
               <th>Catégorie</th>
               <th>Sous-catégorie</th>
               <th>Compte</th>
@@ -911,6 +970,7 @@ useEffect(() => {
               <tr key={m.id}>
                 <td>{m.date}</td>
                 <td>{m.libelle}</td>
+                <td>{m.type}</td>
                 <td>{m.categorie}</td>
                 <td>{m.sousCategorie}</td>
                 <td>{m.compte}</td>
