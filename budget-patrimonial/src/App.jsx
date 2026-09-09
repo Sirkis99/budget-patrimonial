@@ -41,6 +41,16 @@ const categories = {
     "Vacances",
   ],
 
+  "Epargne": [
+  "PEE",
+  "PER",
+  "Livret A",
+  "Assurance-vie",
+  "Fonds voiture",
+  "Fonds vacances",
+  "Autre épargne",
+],
+
   Enfants: ["Épargne enfants", "Dépenses enfants"],
 
   "Jardin / Maison": [
@@ -87,17 +97,19 @@ function exporterCSV(mouvements) {
     return;
   }
 
-  const entete = [
-    "Date",
-    "Libellé",
-    "Catégorie",
-    "Sous-catégorie",
-    "Montant",
-    "Compte",
-    "Type",
-    "Identifiant",
-    "Commentaire",
-  ];
+const entetes = [
+  "Date",
+  "Libellé",
+  "Type",
+  "Catégorie",
+  "Sous-catégorie",
+  "Compte",
+  "CompteDestination",
+  "ModePaiement",
+  "Montant",
+  "Id",
+  "Commentaire",
+];
 
   function formaterDate(dateISO) {
     const [annee, mois, jour] = dateISO.split("-");
@@ -119,17 +131,19 @@ function exporterCSV(mouvements) {
         ? "Revenu"
         : "Dépense";
 
-    const valeurs = [
-      formaterDate(mouvement.date),
-      mouvement.libelle,
-      mouvement.categorie,
-      mouvement.sousCategorie,
-      montant,
-      mouvement.compte,
-      type,
-      mouvement.id,
-      mouvement.commentaire,
-    ];
+const valeurs = [
+  formaterDate(mouvement.date),
+  mouvement.libelle,
+  mouvement.type,
+  mouvement.categorie,
+  mouvement.sousCategorie,
+  mouvement.compte,
+  mouvement.compteDestination || "",
+  mouvement.modePaiement || "",
+  montant,
+  mouvement.id,
+  mouvement.commentaire,
+];
 
     return valeurs
       .map(protegerValeur)
@@ -137,7 +151,7 @@ function exporterCSV(mouvements) {
   });
 
   const contenuCSV = [
-    entete.map(protegerValeur).join(";"),
+    entetes.map(protegerValeur).join(";"),
     ...lignes,
   ].join("\r\n");
 
@@ -201,54 +215,7 @@ const correspondanceComptes = {
 };
 
  export default function App() {
-  const [onglet, setOnglet] = useState("mouvements");
-const [patrimoine, setPatrimoine] = useState(() => {
-  const sauvegarde =
-    localStorage.getItem("budget-patrimoine");
 
-  return sauvegarde
-    ? JSON.parse(sauvegarde)
-    : {
-        compteCourant: 5000,
-        livretA: 10000,
-        assuranceVie: 1500,
-        pee: 22000,
-        per: 0,
-        fondsVoiture: 0,
-        fondsVacances : 3500,
-      };
-});
-
-const liquidites =
-  patrimoine.compteCourant +
-  patrimoine.livretA;
-
-const placements =
-  patrimoine.assuranceVie +
-  patrimoine.pee +
-  patrimoine.per;
-
-const fondsVoiture =
-  patrimoine.fondsVoiture;
-
-const fondsVacances =
-  patrimoine.fondsVacances || 3500;
-  
-const patrimoineTotal =
-  liquidites +
-  placements +
-  fondsVoiture+
-  fondsVacances;
-
-const pctLiquidites =
-  patrimoineTotal > 0
-    ? (liquidites / patrimoineTotal) * 100
-    : 0;
-
-const pctPlacements =
-  patrimoineTotal > 0
-    ? (placements / patrimoineTotal) * 100
-    : 0;
 
   const [mouvements, setMouvements] = useState(() => {
   const sauvegarde =
@@ -267,6 +234,7 @@ const pctPlacements =
     type: "Dépense",
     compte: "Compte courant",
     compteDestination: "",
+    modePaiement: "Carte bancaire",
     montant: "",
     commentaire: "",
   });
@@ -278,19 +246,8 @@ const pctPlacements =
     );
   }, [mouvements]);
 
-useEffect(() => {
-  localStorage.setItem(
-    "budget-patrimoine",
-    JSON.stringify(patrimoine)
-  );
-}, [patrimoine]);
 
-  useEffect(() => {
-  localStorage.setItem(
-    "budget-patrimoine",
-    JSON.stringify(patrimoine)
-  );
-}, [patrimoine]);
+
 
   function update(field, value) {
     setForm({
@@ -299,87 +256,9 @@ useEffect(() => {
     });
   }
 
-function appliquerImpactPatrimoine(mouvement) {
-  const cleSource =
-    correspondanceComptes[mouvement.compte];
 
-  if (!cleSource) {
-    alert("Compte source non reconnu");
-    return false;
-  }
 
-  const montant = Math.abs(
-    Number(mouvement.montant)
-  );
 
-  if (!Number.isFinite(montant)) {
-    alert("Montant invalide");
-    return false;
-  }
-
-  if (mouvement.type === "Revenu") {
-    setPatrimoine((ancien) => {
-      const nouveau = { ...ancien };
-
-      nouveau[cleSource] =
-        Number(ancien[cleSource] || 0) + montant;
-
-      return nouveau;
-    });
-
-    return true;
-  }
-
-  if (mouvement.type === "Dépense") {
-    setPatrimoine((ancien) => {
-      const nouveau = { ...ancien };
-
-      nouveau[cleSource] =
-        Number(ancien[cleSource] || 0) - montant;
-
-      return nouveau;
-    });
-
-    return true;
-  }
-
-  if (mouvement.type === "Transfert") {
-    const cleDestination =
-      correspondanceComptes[
-        mouvement.compteDestination
-      ];
-
-    if (!cleDestination) {
-      alert("Sélectionnez un compte destination");
-      return false;
-    }
-
-    if (cleSource === cleDestination) {
-      alert(
-        "Les comptes source et destination doivent être différents"
-      );
-      return false;
-    }
-
-    setPatrimoine((ancien) => {
-      const nouveau = { ...ancien };
-
-      nouveau[cleSource] =
-        Number(ancien[cleSource] || 0) - montant;
-
-      nouveau[cleDestination] =
-        Number(ancien[cleDestination] || 0) +
-        montant;
-
-      return nouveau;
-    });
-
-    return true;
-  }
-
-  alert("Type de mouvement non reconnu");
-  return false;
-}
 
   
 
@@ -414,6 +293,7 @@ function appliquerImpactPatrimoine(mouvement) {
       sousCategorie: "",
       type: "Dépense",
       compte: "Compte courant",
+      modePaiement: "Carte bancaire",
       montant: "",
       commentaire: "",
     });
@@ -454,18 +334,9 @@ function appliquerImpactPatrimoine(mouvement) {
         Mouvements
       </button>
 
-      <button
-        onClick={() => setOnglet("patrimoine")}
-      >
-        Patrimoine
-      </button>
+
     </div>
 
-<h2>
-  Onglet actif : {onglet}
-</h2>
-
-{onglet === "mouvements" && (
   <>
   <form onSubmit={enregistrer}>
         <div style={{ marginBottom: 15 }}>
@@ -574,6 +445,37 @@ function appliquerImpactPatrimoine(mouvement) {
             ))}
           </select>
         </div>
+<div style={{ marginBottom: 15 }}>
+  <label>Mode de paiement</label>
+  <br />
+
+  <select
+    value={form.modePaiement}
+    onChange={(e) =>
+      update("modePaiement", e.target.value)
+    }
+  >
+    <option value="Carte bancaire">
+      💳 Carte bancaire
+    </option>
+
+    <option value="Virement">
+      🏦 Virement
+    </option>
+
+    <option value="Prélèvement">
+      📄 Prélèvement
+    </option>
+
+    <option value="Espèces">
+      💵 Espèces
+    </option>
+
+    <option value="Chèque">
+      🧾 Chèque
+    </option>
+  </select>
+</div>
 
        {form.type === "Transfert" && (
   <div style={{ marginBottom: 15 }}>
@@ -664,373 +566,8 @@ function appliquerImpactPatrimoine(mouvement) {
       <h2>Mouvements</h2>
 
   </>
- )}
-{onglet === "patrimoine" && (
-  <div
-    style={{
-      border: "1px solid #ccc",
-      padding: "20px",
-      marginBottom: "20px",
-      borderRadius: "8px",
-      backgroundColor: "#f8f8f8",
-    }}
-  >
-    <h2>Patrimoine</h2>
-
-<div
-  style={{
-    display: "flex",
-    gap: "10px",
-    flexWrap: "wrap",
-    marginBottom: "20px",
-  }}
->
-  <div
-    style={{
-      backgroundColor: "#1565c0",
-      color: "white",
-      padding: "15px",
-      borderRadius: "10px",
-      minWidth: "180px",
-    }}
-  >
-    <strong>💰 Patrimoine total</strong>
-    <br />
-    {formatEuros(patrimoineTotal)} €
-  </div>
-
-  <div
-    style={{
-      backgroundColor: "#26a69a",
-      color: "white",
-      padding: "15px",
-      borderRadius: "10px",
-      minWidth: "180px",
-    }}
-  >
-<strong>💧 Liquidités</strong>
-<br />
-{formatEuros(liquidites)} €
-<br />
-{pctLiquidites.toFixed(1)} %
-  </div>
-
-  <div
-    style={{
-      backgroundColor: "#43a047",
-      color: "white",
-      padding: "15px",
-      borderRadius: "10px",
-      minWidth: "180px",
-    }}
-  >
-<strong>📈 Placements</strong>
-<br />
-{formatEuros(placements)} €
-<br />
-{pctPlacements.toFixed(1)} %
-  </div>
-
-  <div
-    style={{
-      backgroundColor: "#ef6c00",
-      color: "white",
-      padding: "15px",
-      borderRadius: "10px",
-      minWidth: "180px",
-    }}
-  >
-    <strong>🚗 Fonds voiture</strong>
-    <br />
-    {formatEuros(fondsVoiture)} €
-  </div>
-
-<div
-  style={{
-    backgroundColor: "#e91e63",
-    color: "white",
-    padding: "15px",
-    borderRadius: "10px",
-    minWidth: "180px",
-  }}
->
-  <strong>🏖️ Fonds vacances</strong>
-  <br />
-  {formatEuros(fondsVacances)} €
-</div>
-
-</div>
-
-<div
-  style={{
-    background:
-      "linear-gradient(135deg,#1565c0,#42a5f5)",
-    color: "white",
-    padding: "20px",
-    borderRadius: "15px",
-    marginBottom: "20px",
-  }}
- >
 
 
-  <h2 style={{ margin: 0 }}>
-    💰 Patrimoine Total
-  </h2>
-
-  <h1>
-    {formatEuros(
-      patrimoine.compteCourant +
-      patrimoine.livretA +
-      patrimoine.assuranceVie +
-      patrimoine.pee +
-      patrimoine.per +
-      patrimoine.fondsVoiture
-    )} €
-  </h1>
-</div>
-
-<div style={cardStyle}>
-  <h3 style={{ margin: 0 }}>
-    💧 Compte courant
-  </h3>
-
-  <p
-    style={{
-      fontSize: "24px",
-      color: "#1565c0",
-      fontWeight: "bold",
-    }}
-  >
-    {formatEuros(
-      patrimoine.compteCourant
-    )} €
-  </p>
-
-  <input
-    type="number"
-    value={patrimoine.compteCourant}
-    onChange={(e) =>
-      setPatrimoine({
-        ...patrimoine,
-        compteCourant: Number(
-          e.target.value
-        ),
-      })
-    }
-  />
-</div>
-
-
-  <div style={cardStyle}>
-  <h3 style={{ margin: 0 }}>
-    🏦 Livret A
-  </h3>
-
-  <p
-    style={{
-      fontSize: "24px",
-      color: "#1565c0",
-      fontWeight: "bold",
-    }}
-  >
-    {formatEuros(
-      patrimoine.livretA
-    )} €
-  </p>
-
-  <input
-    type="number"
-    value={patrimoine.livretA}
-    onChange={(e) =>
-      setPatrimoine({
-        ...patrimoine,
-        livretA: Number(
-          e.target.value
-        ),
-      })
-    }
-  />
-</div>
-
-
-   <div style={cardStyle}>
-  <h3 style={{ margin: 0 }}>
-    🌱 Assurance-vie
-  </h3>
-
-  <p
-    style={{
-      fontSize: "24px",
-      color: "#1565c0",
-      fontWeight: "bold",
-    }}
-  >
-    {formatEuros(
-      patrimoine.assuranceVie
-    )} €
-  </p>
-
-  <input
-    type="number"
-    value={patrimoine.assuranceVie}
-    onChange={(e) =>
-      setPatrimoine({
-        ...patrimoine,
-        assuranceVie: Number(
-          e.target.value
-        ),
-      })
-    }
-  />
-</div>
-
-
-   <div style={cardStyle}>
-  <h3 style={{ margin: 0 }}>
-    📈 PEE
-  </h3>
-
-  <p
-    style={{
-      fontSize: "24px",
-      color: "#2e7d32",
-      fontWeight: "bold",
-    }}
-  >
-    {formatEuros(
-      patrimoine.pee
-    )} €
-  </p>
-
-  <input
-    type="number"
-    value={patrimoine.pee}
-    onChange={(e) =>
-      setPatrimoine({
-        ...patrimoine,
-        pee: Number(
-          e.target.value
-        ),
-      })
-    }
-  />
-</div>
-
-    <div style={cardStyle}>
-  <h3 style={{ margin: 0 }}>
-    🛡️ PER
-  </h3>
-
-  <p
-    style={{
-      fontSize: "24px",
-      color: "#2e7d32",
-      fontWeight: "bold",
-    }}
-  >
-    {formatEuros(
-      patrimoine.per
-    )} €
-  </p>
-
-  <input
-    type="number"
-    value={patrimoine.per}
-    onChange={(e) =>
-      setPatrimoine({
-        ...patrimoine,
-        per: Number(
-          e.target.value
-        ),
-      })
-    }
-  />
-</div>
-
-   <div style={cardStyle}>
-  <h3 style={{ margin: 0 }}>
-    🚗 Fonds voiture
-  </h3>
-
-  <p
-    style={{
-      fontSize: "24px",
-      color: "#2e7d32",
-      fontWeight: "bold",
-    }}
-  >
-    {formatEuros(
-      patrimoine.fondsVoiture
-    )} €
-  </p>
-
-  <input
-    type="number"
-    value={patrimoine.fondsVoiture}
-    onChange={(e) =>
-      setPatrimoine({
-        ...patrimoine,
-        fondsVoiture: Number(
-          e.target.value
-        ),
-      })
-    }
-  />
-</div>
-
-<div style={cardStyle}>
-  <h3 style={{ margin: 0 }}>
-    🏖️ Fonds vacances
-  </h3>
-
-  <p
-    style={{
-      fontSize: "24px",
-      color: "#2e7d32",
-      fontWeight: "bold",
-    }}
-  >
-    {formatEuros(
-      patrimoine.fondsVacances || 3500
-    )} €
-  </p>
-
-  <input
-    type="number"
-    value={patrimoine.fondsVacances || 3500}
-    onChange={(e) =>
-      setPatrimoine({
-        ...patrimoine,
-        fondsVacances: Number(
-          e.target.value
-        ),
-      })
-    }
-  />
-</div>
-
-    <hr />
-
-<h3
-  style={{
-    color: "#1565c0",
-    fontSize: "24px",
-  }}
->
-  Total patrimoine :
-  {" "}
-  {formatEuros(
-    patrimoine.compteCourant +
-    patrimoine.livretA +
-    patrimoine.assuranceVie +
-    patrimoine.pee +
-    patrimoine.per +
-    patrimoine.fondsVoiture
-  )}
-  {" "}€
-</h3>
-  </div>
-)}
       
       <button
   onClick={() =>
@@ -1085,6 +622,7 @@ function appliquerImpactPatrimoine(mouvement) {
               <th>Sous-catégorie</th>
               <th>Compte</th>
               <th>Montant</th>
+              <th>Mode Paiement</th>
               <th>CompteDestination</th>
               <th></th>
             </tr>
@@ -1099,6 +637,8 @@ function appliquerImpactPatrimoine(mouvement) {
                 <td>{m.categorie}</td>
                 <td>{m.sousCategorie}</td>
                 <td>{m.compte}</td>
+                <td>{m.montant}</td>
+                <td>{m.modePaiement}</td>
                 <td>{m.compteDestination}</td>
                 <td
                   style={{
