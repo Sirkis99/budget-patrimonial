@@ -244,6 +244,7 @@ const pctPlacements =
     libelle: "",
     categorie: "Courses",
     sousCategorie: "",
+    type: "Dépense",
     compte: "Compte courant",
     montant: "",
     commentaire: "",
@@ -306,6 +307,7 @@ useEffect(() => {
       libelle: "",
       categorie: "Courses",
       sousCategorie: "",
+      type: "Dépense",
       compte: "Compte courant",
       montant: "",
       commentaire: "",
@@ -426,9 +428,32 @@ useEffect(() => {
   />
 </div>
 
+<div style={{ marginBottom: 15 }}>
+  <label>Type de mouvement</label>
+  <br />
+
+  <select
+    value={form.type}
+    onChange={(e) =>
+      update("type", e.target.value)
+    }
+  >
+    <option value="Dépense">
+      Dépense
+    </option>
+
+    <option value="Revenu">
+      Revenu
+    </option>
+
+    <option value="Transfert">
+      Transfert entre comptes
+    </option>
+  </select>
+</div>
 
         <div style={{ marginBottom: 15 }}>
-          <label>Compte</label>
+          <label>Compte</label>hots
           <br />
           <select
             value={form.compte}
