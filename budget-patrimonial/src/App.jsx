@@ -214,7 +214,74 @@ const correspondanceComptes = {
   "Fonds vacances": "fondsVacances",
 };
 
+function lireLigneCSV(ligne) {
+  const colonnes = [];
+  let valeur = "";
+  let entreGuillemets = false;
 
+  for (let i = 0; i < ligne.length; i++) {
+    const caractere = ligne[i];
+    const suivant = ligne[i + 1];
+
+    if (
+      caractere === '"' &&
+      entreGuillemets &&
+      suivant === '"'
+    ) {
+      valeur += '"';
+      i++;
+    } else if (caractere === '"') {
+      entreGuillemets = !entreGuillemets;
+    } else if (
+      caractere === ";" &&
+      !entreGuillemets
+    ) {
+      colonnes.push(valeur);
+      valeur = "";
+    } else {
+      valeur += caractere;
+    }
+  }
+
+  colonnes.push(valeur);
+
+  return colonnes.map((colonne) =>
+    colonne.trim()
+  );
+}
+
+function convertirDateCSV(dateCSV) {
+  const dateNettoyee = String(
+    dateCSV || ""
+  ).trim();
+
+  if (!dateNettoyee) {
+    return "";
+  }
+
+  // La date est déjà au format AAAA-MM-JJ
+  if (
+    /^\d{4}-\d{2}-\d{2}$/.test(
+      dateNettoyee
+    )
+  ) {
+    return dateNettoyee;
+  }
+
+  // Conversion de JJ/MM/AAAA vers AAAA-MM-JJ
+  const parties = dateNettoyee.split("/");
+
+  if (parties.length === 3) {
+    const [jour, mois, annee] = parties;
+
+    return `${annee}-${mois.padStart(
+      2,
+      "0"
+    )}-${jour.padStart(2, "0")}`;
+  }
+
+  return dateNettoyee;
+}
 
  export default function App() {
 
@@ -223,10 +290,224 @@ const correspondanceComptes = {
   const sauvegarde =
     localStorage.getItem("budget-mouvements");
 
+
   return sauvegarde
     ? JSON.parse(sauvegarde)
     : [];
 });
+
+function importerCSV(event) {
+  const fichier =
+    event.target.files?.[0];
+
+  if (!fichier) {
+    return;
+  }
+
+  const lecteur = new FileReader();
+
+  lecteur.onload = (resultat) => {
+    try {
+      const contenu = String(
+        resultat.target?.result || ""
+      ).replace(/^\uFEFF/, "");
+
+      const lignes = contenu
+        .split(/\r?\n/)
+        .filter(
+          (ligne) =>
+            ligne.trim() !== ""
+        );
+
+      if (lignes.length < 2) {
+        alert(
+          "Le fichier CSV ne contient aucune opération."
+        );
+
+        event.target.value = "";
+        return;
+      }
+
+      const entetesAttendues = [
+        "Date",
+        "Libellé",
+        "Catégorie",
+        "Sous-catégorie",
+        "Montant",
+        "Compte",
+        "Type",
+        "Identifiant",
+        "Commentaire",
+      ];
+
+      const entetesFichier =
+        lireLigneCSV(lignes[0]);
+
+      const entetesCorrectes =
+        entetesAttendues.every(
+          (entete, index) =>
+            entetesFichier[index] ===
+            entete
+        );
+
+      if (!entetesCorrectes) {
+        alert(
+          "Le format du fichier CSV est incorrect.\n\n" +
+            "Colonnes attendues :\n" +
+            entetesAttendues.join(" ; ")
+        );
+
+        event.target.value = "";
+        return;
+      }
+
+      const mouvementsImportes = [];
+
+      for (
+        let index = 1;
+        index < lignes.length;
+        index++
+      ) {
+        const colonnes =
+          lireLigneCSV(lignes[index]);
+
+        if (colonnes.length < 9) {
+          continue;
+        }
+
+        const [
+          date,
+          libelle,
+          categorie,
+          sousCategorie,
+          montantTexte,
+          compte,
+          type,
+          identifiant,
+          commentaire,
+        ] = colonnes;
+
+        const montant = Number(
+          String(montantTexte)
+            .replace(/\s/g, "")
+            .replace(",", ".")
+        );
+
+        if (
+          !date ||
+          !libelle ||
+          !Number.isFinite(montant)
+        ) {
+          continue;
+        }
+
+        mouvementsImportes.push({
+          id:
+            identifiant ||
+            `IMPORT-${Date.now()}-${index}`,
+          date: convertirDateCSV(date),
+          libelle,
+          categorie,
+          sousCategorie:
+            sousCategorie || "",
+          montant,
+          compte:
+            compte || "Compte courant",
+          type:
+            type ||
+            (montant >= 0
+              ? "Revenu"
+              : "Dépense"),
+          commentaire:
+            commentaire || "",
+
+          // Ces deux champs n’existent pas
+          // encore dans la table Excel.
+          compteDestination: "",
+          modePaiement: "",
+        });
+      }
+
+      if (
+        mouvementsImportes.length === 0
+      ) {
+        alert(
+          "Aucune opération valide n’a été trouvée."
+        );
+
+        event.target.value = "";
+        return;
+      }
+
+      const identifiantsExistants =
+        new Set(
+          mouvements.map((mouvement) =>
+            String(mouvement.id)
+          )
+        );
+
+      const nouveauxMouvements =
+        mouvementsImportes.filter(
+          (mouvement) =>
+            !identifiantsExistants.has(
+              String(mouvement.id)
+            )
+        );
+
+      if (
+        nouveauxMouvements.length === 0
+      ) {
+        alert(
+          "Toutes les opérations de ce fichier sont déjà présentes."
+        );
+
+        event.target.value = "";
+        return;
+      }
+
+      setMouvements(
+        (anciensMouvements) => [
+          ...nouveauxMouvements,
+          ...anciensMouvements,
+        ]
+      );
+
+      alert(
+        `${nouveauxMouvements.length} opération(s) importée(s).\n` +
+          `${
+            mouvementsImportes.length -
+            nouveauxMouvements.length
+          } doublon(s) ignoré(s).`
+      );
+    } catch (erreur) {
+      console.error(
+        "Erreur import CSV :",
+        erreur
+      );
+
+      alert(
+        "Le fichier CSV n’a pas pu être importé."
+      );
+    } finally {
+      event.target.value = "";
+    }
+  };
+
+  lecteur.onerror = () => {
+    alert(
+      "Erreur pendant la lecture du fichier."
+    );
+
+    event.target.value = "";
+  };
+
+  lecteur.readAsText(
+    fichier,
+    "UTF-8"
+  );
+}
+
+
 
   const [form, setForm] = useState({
     date: new Date().toISOString().substring(0, 10),
@@ -569,7 +850,29 @@ const correspondanceComptes = {
 
   </>
 
+<label
+  style={{
+    display: "inline-block",
+    marginRight: "10px",
+    marginBottom: "20px",
+    backgroundColor: "#1565c0",
+    color: "white",
+    padding: "10px 14px",
+    borderRadius: "6px",
+    cursor: "pointer",
+  }}
+>
+  Importer CSV
 
+  <input
+    type="file"
+    accept=".csv,text/csv"
+    onChange={importerCSV}
+    style={{
+      display: "none",
+    }}
+  />
+</label>
       
       <button
   onClick={() =>
