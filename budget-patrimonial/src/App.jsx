@@ -100,15 +100,15 @@ function exporterCSV(mouvements) {
 const entetes = [
   "Date",
   "Libellé",
-  "Type",
   "Catégorie",
   "Sous-catégorie",
+  "Montant",
   "Compte",
+  "Type",
+  "Identifiant",
+  "Commentaire",
   "CompteDestination",
   "ModePaiement",
-  "Montant",
-  "Id",
-  "Commentaire",
 ];
 
   function formaterDate(dateISO) {
@@ -134,15 +134,15 @@ const entetes = [
 const valeurs = [
   formaterDate(mouvement.date),
   mouvement.libelle,
-  mouvement.type,
   mouvement.categorie,
   mouvement.sousCategorie,
-  mouvement.compte,
-  mouvement.compteDestination || "",
-  mouvement.modePaiement || "",
   montant,
+  mouvement.compte,
+  mouvement.type,
   mouvement.id,
   mouvement.commentaire,
+  mouvement.compteDestination || "",
+  mouvement.modePaiement || "",
 ];
 
     return valeurs
@@ -213,6 +213,8 @@ const correspondanceComptes = {
   "Fonds voiture": "fondsVoiture",
   "Fonds vacances": "fondsVacances",
 };
+
+
 
  export default function App() {
 
