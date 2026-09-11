@@ -7,6 +7,7 @@ const comptes = [
   "PEE",
   "PER",
   "Fonds voiture",
+  "Fonds vacances",
 ];
 
 const categories = {
@@ -15,6 +16,7 @@ const categories = {
     "Salaire Jennifer",
     "SAP",
     "Don parental",
+    "Remboursements santé",
     "Autres revenus",
   ],
 
@@ -34,9 +36,19 @@ const categories = {
     "Loisirs",
     "Vêtements",
     "Santé",
+    "Animaux",
     "Divers",
     "Vacances",
   ],
+  "Epargne": [
+  "PEE",
+  "PER",
+  "Livret A",
+  "Assurance-vie",
+  "Fonds voiture",
+  "Fonds vacances",
+  "Autre épargne",
+],
 
   Enfants: ["Épargne enfants", "Dépenses enfants"],
 
@@ -58,6 +70,7 @@ const categories = {
     "PEE",
     "PER",
     "Fonds voiture",
+    "Fonds vacances",
   ],
 
   Projets: [
@@ -73,6 +86,7 @@ const categoriesRevenus = [
   "Salaire Jennifer",
   "SAP",
   "Don parental",
+  "Remboursements santé",
   "Autres revenus",
 ];
 
@@ -82,7 +96,7 @@ function exporterCSV(mouvements) {
     return;
   }
 
-  const entete = [
+  const entetes = [
     "Date",
     "Libellé",
     "Catégorie",
@@ -92,6 +106,10 @@ function exporterCSV(mouvements) {
     "Type",
     "Identifiant",
     "Commentaire",
+    "CompteDestination",
+    "ModePaiement",
+     
+    
   ];
 
   function formaterDate(dateISO) {
@@ -114,17 +132,19 @@ function exporterCSV(mouvements) {
         ? "Revenu"
         : "Dépense";
 
-    const valeurs = [
-      formaterDate(mouvement.date),
-      mouvement.libelle,
-      mouvement.categorie,
-      mouvement.sousCategorie,
-      montant,
-      mouvement.compte,
-      type,
-      mouvement.id,
-      mouvement.commentaire,
-    ];
+const valeurs = [
+  formaterDate(mouvement.date),
+  mouvement.libelle,
+  mouvement.categorie,
+  mouvement.sousCategorie,
+  montant,
+  mouvement.compte,
+  mouvement.type,
+  mouvement.id,
+  mouvement.commentaire,
+  mouvement.compteDestination || "",
+  mouvement.modePaiement || "",
+];
 
     return valeurs
       .map(protegerValeur)
@@ -132,7 +152,7 @@ function exporterCSV(mouvements) {
   });
 
   const contenuCSV = [
-    entete.map(protegerValeur).join(";"),
+    entetes.map(protegerValeur).join(";"),
     ...lignes,
   ].join("\r\n");
 
@@ -167,6 +187,34 @@ function exporterCSV(mouvements) {
   window.URL.revokeObjectURL(url);
 }
 
+function formatEuros(valeur) {
+  return Number(valeur).toLocaleString(
+    "fr-FR",
+    {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }
+  );
+}
+
+const cardStyle = {
+  backgroundColor: "#ffffff",
+  borderRadius: "12px",
+  padding: "15px",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+  marginBottom: "15px",
+};
+
+const correspondanceComptes = {
+  "Compte courant": "compteCourant",
+  "Livret A": "livretA",
+  "Assurance-vie": "assuranceVie",
+  "PEE": "pee",
+  "PER": "per",
+  "Fonds voiture": "fondsVoiture",
+  "Fonds vacances": "fondsVacances",
+};
+
  export default function App() {
   const [mouvements, setMouvements] = useState(() => {
   const sauvegarde =
@@ -182,7 +230,10 @@ function exporterCSV(mouvements) {
     libelle: "",
     categorie: "Courses",
     sousCategorie: "",
+    type: "Dépense",
     compte: "Compte courant",
+    compteDestination: "",
+    modePaiement: "Carte bancaire",
     montant: "",
     commentaire: "",
   });
@@ -230,7 +281,9 @@ function exporterCSV(mouvements) {
       libelle: "",
       categorie: "Courses",
       sousCategorie: "",
+      type: "Dépense",
       compte: "Compte courant",
+      modePaiement: "Carte bancaire",
       montant: "",
       commentaire: "",
     });
@@ -263,6 +316,18 @@ function exporterCSV(mouvements) {
     >
       <h1>📊 Budget Patrimonial</h1>
 
+          <div style={{ marginBottom: "20px" }}>
+      <button
+        onClick={() => setOnglet("mouvements")}
+        style={{ marginRight: "10px" }}
+      >
+        Mouvements
+      </button>
+
+
+    </div>
+
+  <>
       <form onSubmit={enregistrer}>
         <div style={{ marginBottom: 15 }}>
           <label>Date</label>
@@ -330,6 +395,31 @@ function exporterCSV(mouvements) {
 </div>
 
 
+<div style={{ marginBottom: 15 }}>
+  <label>Type de mouvement</label>
+  <br />
+
+  <select
+    value={form.type}
+    onChange={(e) =>
+      update("type", e.target.value)
+    }
+  >
+    <option value="Dépense">
+      Dépense
+    </option>
+
+    <option value="Revenu">
+      Revenu
+    </option>
+
+    <option value="Transfert">
+      Transfert entre comptes
+    </option>
+  </select>
+
+</div>
+
         <div style={{ marginBottom: 15 }}>
           <label>Compte</label>
           <br />
@@ -344,6 +434,63 @@ function exporterCSV(mouvements) {
             ))}
           </select>
         </div>
+
+        <div style={{ marginBottom: 15 }}>
+  <label>Mode de paiement</label>
+  <br />
+
+  <select
+    value={form.modePaiement}
+    onChange={(e) =>
+      update("modePaiement", e.target.value)
+    }
+  >
+    <option value="Carte bancaire">
+      💳 Carte bancaire
+    </option>
+
+    <option value="Virement">
+      🏦 Virement
+    </option>
+
+    <option value="Prélèvement">
+      📄 Prélèvement
+    </option>
+
+    <option value="Espèces">
+      💵 Espèces
+    </option>
+
+    <option value="Chèque">
+      🧾 Chèque
+    </option>
+  </select>
+</div>
+
+       {form.type === "Transfert" && (
+  <div style={{ marginBottom: 15 }}>
+    <label>Compte destination</label>
+    <br />
+
+    <select
+      value={form.compteDestination}
+      onChange={(e) =>
+        update(
+          "compteDestination",
+          e.target.value
+        )
+      }
+    >
+      <option value="">
+        Sélectionner...
+      </option>
+
+      {comptes.map((c) => (
+        <option key={c}>{c}</option>
+      ))}
+    </select>
+  </div>
+)}     
 
         <div style={{ marginBottom: 15 }}>
           <label>Montant</label>
@@ -408,6 +555,7 @@ function exporterCSV(mouvements) {
 
       <h2>Mouvements</h2>
 
+</>
       <button
   onClick={() =>
     exporterCSV(mouvements)
@@ -456,10 +604,13 @@ function exporterCSV(mouvements) {
             <tr>
               <th>Date</th>
               <th>Libellé</th>
+              <th>Type</th>
               <th>Catégorie</th>
               <th>Sous-catégorie</th>
               <th>Compte</th>
               <th>Montant</th>
+              <th>Mode Paiement</th>
+              <th>CompteDestination</th>
               <th></th>
             </tr>
           </thead>
@@ -469,9 +620,13 @@ function exporterCSV(mouvements) {
               <tr key={m.id}>
                 <td>{m.date}</td>
                 <td>{m.libelle}</td>
+                <td>{m.type}</td>
                 <td>{m.categorie}</td>
                 <td>{m.sousCategorie}</td>
                 <td>{m.compte}</td>
+                <td>{m.montant}</td>
+                <td>{m.modePaiement}</td>
+                <td>{m.compteDestination}</td>
 
                 <td
                   style={{
