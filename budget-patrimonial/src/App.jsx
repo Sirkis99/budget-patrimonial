@@ -253,42 +253,119 @@ const correspondanceComptes = {
     });
   }
 
-  function enregistrer(e) {
-    e.preventDefault();
+function enregistrer(e) {
+  e.preventDefault();
 
-    let montant = parseFloat(form.montant);
+  const montantSaisi = Number(
+    String(form.montant).replace(",", ".")
+  );
 
-    if (isNaN(montant)) {
-      alert("Montant invalide");
+  if (
+    !Number.isFinite(montantSaisi) ||
+    montantSaisi <= 0
+  ) {
+    alert("Montant invalide");
+    return;
+  }
+
+  const montant = Math.abs(montantSaisi);
+  const identifiantBase = Date.now();
+
+  if (form.type === "Transfert") {
+    if (!form.compteDestination) {
+      alert(
+        "Veuillez sélectionner un compte destination."
+      );
       return;
     }
 
-    if (!categoriesRevenus.includes(form.categorie)) {
-      montant = -Math.abs(montant);
-    } else {
-      montant = Math.abs(montant);
+    if (
+      form.compte === form.compteDestination
+    ) {
+      alert(
+        "Le compte source et le compte destination doivent être différents."
+      );
+      return;
     }
 
-    const nouveauMouvement = {
-      id: Date.now(),
-      ...form,
-      montant,
+    const mouvementSortie = {
+      id: `${identifiantBase}-S`,
+      date: form.date,
+      libelle:
+        form.libelle ||
+        `Transfert vers ${form.compteDestination}`,
+      categorie: form.categorie,
+      sousCategorie: form.sousCategorie,
+      montant: -montant,
+      compte: form.compte,
+      type: "Dépense",
+      commentaire:
+        form.commentaire ||
+        `Transfert vers ${form.compteDestination}`,
+      compteDestination:
+        form.compteDestination,
+      modePaiement: "Virement",
+      transfertId: identifiantBase,
     };
 
-    setMouvements([nouveauMouvement, ...mouvements]);
+    const mouvementEntree = {
+      id: `${identifiantBase}-E`,
+      date: form.date,
+      libelle:
+        form.libelle ||
+        `Transfert depuis ${form.compte}`,
+      categorie: form.categorie,
+      sousCategorie: form.sousCategorie,
+      montant: montant,
+      compte: form.compteDestination,
+      type: "Revenu",
+      commentaire:
+        form.commentaire ||
+        `Transfert depuis ${form.compteDestination}`,
+      compteDestination: form.compte,
+      modePaiement: "Virement",
+      transfertId: identifiantBase,
+    };
 
-    setForm({
-      date: new Date().toISOString().substring(0, 10),
-      libelle: "",
-      categorie: "Courses",
-      sousCategorie: "",
-      type: "Dépense",
-      compte: "Compte courant",
-      modePaiement: "Carte bancaire",
-      montant: "",
-      commentaire: "",
-    });
+    setMouvements((anciensMouvements) => [
+      mouvementEntree,
+      mouvementSortie,
+      ...anciensMouvements,
+    ]);
+  } else {
+    const montantEnregistre =
+      form.type === "Revenu"
+        ? montant
+        : -montant;
+
+    const nouveauMouvement = {
+      id: identifiantBase,
+      ...form,
+      montant: montantEnregistre,
+      compteDestination: "",
+    };
+
+    setMouvements((anciensMouvements) => [
+      nouveauMouvement,
+      ...anciensMouvements,
+    ]);
   }
+
+  setForm({
+    date: new Date()
+      .toISOString()
+      .substring(0, 10),
+    libelle: "",
+    categorie: "Courses",
+    sousCategorie: "",
+    type: "Dépense",
+    compte: "Compte courant",
+    compteDestination: "",
+    modePaiement: "Carte bancaire",
+    montant: "",
+    commentaire: "",
+  });
+}
 
   function supprimer(id) {
     setMouvements(
