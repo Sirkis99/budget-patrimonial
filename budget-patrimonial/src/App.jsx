@@ -21,6 +21,7 @@ const categories = {
   ],
 
   "Charges fixes": [
+    "Prêts",
     "Électricité",
     "Eau",
     "Taxe foncière",
