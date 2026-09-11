@@ -7,7 +7,6 @@ const comptes = [
   "PEE",
   "PER",
   "Fonds voiture",
-  "Fonds vacances",
 ];
 
 const categories = {
@@ -16,7 +15,6 @@ const categories = {
     "Salaire Jennifer",
     "SAP",
     "Don parental",
-    "Remboursements santé",
     "Autres revenus",
   ],
 
@@ -36,20 +34,9 @@ const categories = {
     "Loisirs",
     "Vêtements",
     "Santé",
-    "Animaux",
     "Divers",
     "Vacances",
   ],
-
-  "Epargne": [
-  "PEE",
-  "PER",
-  "Livret A",
-  "Assurance-vie",
-  "Fonds voiture",
-  "Fonds vacances",
-  "Autre épargne",
-],
 
   Enfants: ["Épargne enfants", "Dépenses enfants"],
 
@@ -71,7 +58,6 @@ const categories = {
     "PEE",
     "PER",
     "Fonds voiture",
-    "Fonds vacances",
   ],
 
   Projets: [
@@ -87,7 +73,6 @@ const categoriesRevenus = [
   "Salaire Jennifer",
   "SAP",
   "Don parental",
-  "Remboursements santé",
   "Autres revenus",
 ];
 
@@ -97,19 +82,17 @@ function exporterCSV(mouvements) {
     return;
   }
 
-const entetes = [
-  "Date",
-  "Libellé",
-  "Catégorie",
-  "Sous-catégorie",
-  "Montant",
-  "Compte",
-  "Type",
-  "Identifiant",
-  "Commentaire",
-  "CompteDestination",
-  "ModePaiement",
-];
+  const entete = [
+    "Date",
+    "Libellé",
+    "Catégorie",
+    "Sous-catégorie",
+    "Montant",
+    "Compte",
+    "Type",
+    "Identifiant",
+    "Commentaire",
+  ];
 
   function formaterDate(dateISO) {
     const [annee, mois, jour] = dateISO.split("-");
@@ -131,19 +114,17 @@ const entetes = [
         ? "Revenu"
         : "Dépense";
 
-const valeurs = [
-  formaterDate(mouvement.date),
-  mouvement.libelle,
-  mouvement.categorie,
-  mouvement.sousCategorie,
-  montant,
-  mouvement.compte,
-  mouvement.type,
-  mouvement.id,
-  mouvement.commentaire,
-  mouvement.compteDestination || "",
-  mouvement.modePaiement || "",
-];
+    const valeurs = [
+      formaterDate(mouvement.date),
+      mouvement.libelle,
+      mouvement.categorie,
+      mouvement.sousCategorie,
+      montant,
+      mouvement.compte,
+      type,
+      mouvement.id,
+      mouvement.commentaire,
+    ];
 
     return valeurs
       .map(protegerValeur)
@@ -151,7 +132,7 @@ const valeurs = [
   });
 
   const contenuCSV = [
-    entetes.map(protegerValeur).join(";"),
+    entete.map(protegerValeur).join(";"),
     ...lignes,
   ].join("\r\n");
 
@@ -186,338 +167,22 @@ const valeurs = [
   window.URL.revokeObjectURL(url);
 }
 
-function formatEuros(valeur) {
-  return Number(valeur).toLocaleString(
-    "fr-FR",
-    {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }
-  );
-}
-
-const cardStyle = {
-  backgroundColor: "#ffffff",
-  borderRadius: "12px",
-  padding: "15px",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-  marginBottom: "15px",
-};
-
-const correspondanceComptes = {
-  "Compte courant": "compteCourant",
-  "Livret A": "livretA",
-  "Assurance-vie": "assuranceVie",
-  "PEE": "pee",
-  "PER": "per",
-  "Fonds voiture": "fondsVoiture",
-  "Fonds vacances": "fondsVacances",
-};
-
-function lireLigneCSV(ligne) {
-  const colonnes = [];
-  let valeur = "";
-  let entreGuillemets = false;
-
-  for (let i = 0; i < ligne.length; i++) {
-    const caractere = ligne[i];
-    const suivant = ligne[i + 1];
-
-    if (
-      caractere === '"' &&
-      entreGuillemets &&
-      suivant === '"'
-    ) {
-      valeur += '"';
-      i++;
-    } else if (caractere === '"') {
-      entreGuillemets = !entreGuillemets;
-    } else if (
-      caractere === ";" &&
-      !entreGuillemets
-    ) {
-      colonnes.push(valeur);
-      valeur = "";
-    } else {
-      valeur += caractere;
-    }
-  }
-
-  colonnes.push(valeur);
-
-  return colonnes.map((colonne) =>
-    colonne.trim()
-  );
-}
-
-function convertirDateCSV(dateCSV) {
-  const dateNettoyee = String(
-    dateCSV || ""
-  ).trim();
-
-  if (!dateNettoyee) {
-    return "";
-  }
-
-  // La date est déjà au format AAAA-MM-JJ
-  if (
-    /^\d{4}-\d{2}-\d{2}$/.test(
-      dateNettoyee
-    )
-  ) {
-    return dateNettoyee;
-  }
-
-  // Conversion de JJ/MM/AAAA vers AAAA-MM-JJ
-  const parties = dateNettoyee.split("/");
-
-  if (parties.length === 3) {
-    const [jour, mois, annee] = parties;
-
-    return `${annee}-${mois.padStart(
-      2,
-      "0"
-    )}-${jour.padStart(2, "0")}`;
-  }
-
-  return dateNettoyee;
-}
-
  export default function App() {
-
-
   const [mouvements, setMouvements] = useState(() => {
   const sauvegarde =
     localStorage.getItem("budget-mouvements");
-
 
   return sauvegarde
     ? JSON.parse(sauvegarde)
     : [];
 });
 
-function importerCSV(event) {
-  const fichier =
-    event.target.files?.[0];
-
-  if (!fichier) {
-    return;
-  }
-
-  const lecteur = new FileReader();
-
-  lecteur.onload = (resultat) => {
-    try {
-      const contenu = String(
-        resultat.target?.result || ""
-      ).replace(/^\uFEFF/, "");
-
-      const lignes = contenu
-        .split(/\r?\n/)
-        .filter(
-          (ligne) =>
-            ligne.trim() !== ""
-        );
-
-      if (lignes.length < 2) {
-        alert(
-          "Le fichier CSV ne contient aucune opération."
-        );
-
-        event.target.value = "";
-        return;
-      }
-
-      const entetesAttendues = [
-        "Date",
-        "Libellé",
-        "Catégorie",
-        "Sous-catégorie",
-        "Montant",
-        "Compte",
-        "Type",
-        "Identifiant",
-        "Commentaire",
-      ];
-
-      const entetesFichier =
-        lireLigneCSV(lignes[0]);
-
-      const entetesCorrectes =
-        entetesAttendues.every(
-          (entete, index) =>
-            entetesFichier[index] ===
-            entete
-        );
-
-      if (!entetesCorrectes) {
-        alert(
-          "Le format du fichier CSV est incorrect.\n\n" +
-            "Colonnes attendues :\n" +
-            entetesAttendues.join(" ; ")
-        );
-
-        event.target.value = "";
-        return;
-      }
-
-      const mouvementsImportes = [];
-
-      for (
-        let index = 1;
-        index < lignes.length;
-        index++
-      ) {
-        const colonnes =
-          lireLigneCSV(lignes[index]);
-
-        if (colonnes.length < 9) {
-          continue;
-        }
-
-        const [
-          date,
-          libelle,
-          categorie,
-          sousCategorie,
-          montantTexte,
-          compte,
-          type,
-          identifiant,
-          commentaire,
-        ] = colonnes;
-
-        const montant = Number(
-          String(montantTexte)
-            .replace(/\s/g, "")
-            .replace(",", ".")
-        );
-
-        if (
-          !date ||
-          !libelle ||
-          !Number.isFinite(montant)
-        ) {
-          continue;
-        }
-
-        mouvementsImportes.push({
-          id:
-            identifiant ||
-            `IMPORT-${Date.now()}-${index}`,
-          date: convertirDateCSV(date),
-          libelle,
-          categorie,
-          sousCategorie:
-            sousCategorie || "",
-          montant,
-          compte:
-            compte || "Compte courant",
-          type:
-            type ||
-            (montant >= 0
-              ? "Revenu"
-              : "Dépense"),
-          commentaire:
-            commentaire || "",
-
-          // Ces deux champs n’existent pas
-          // encore dans la table Excel.
-          compteDestination: "",
-          modePaiement: "",
-        });
-      }
-
-      if (
-        mouvementsImportes.length === 0
-      ) {
-        alert(
-          "Aucune opération valide n’a été trouvée."
-        );
-
-        event.target.value = "";
-        return;
-      }
-
-      const identifiantsExistants =
-        new Set(
-          mouvements.map((mouvement) =>
-            String(mouvement.id)
-          )
-        );
-
-      const nouveauxMouvements =
-        mouvementsImportes.filter(
-          (mouvement) =>
-            !identifiantsExistants.has(
-              String(mouvement.id)
-            )
-        );
-
-      if (
-        nouveauxMouvements.length === 0
-      ) {
-        alert(
-          "Toutes les opérations de ce fichier sont déjà présentes."
-        );
-
-        event.target.value = "";
-        return;
-      }
-
-      setMouvements(
-        (anciensMouvements) => [
-          ...nouveauxMouvements,
-          ...anciensMouvements,
-        ]
-      );
-
-      alert(
-        `${nouveauxMouvements.length} opération(s) importée(s).\n` +
-          `${
-            mouvementsImportes.length -
-            nouveauxMouvements.length
-          } doublon(s) ignoré(s).`
-      );
-    } catch (erreur) {
-      console.error(
-        "Erreur import CSV :",
-        erreur
-      );
-
-      alert(
-        "Le fichier CSV n’a pas pu être importé."
-      );
-    } finally {
-      event.target.value = "";
-    }
-  };
-
-  lecteur.onerror = () => {
-    alert(
-      "Erreur pendant la lecture du fichier."
-    );
-
-    event.target.value = "";
-  };
-
-  lecteur.readAsText(
-    fichier,
-    "UTF-8"
-  );
-}
-
-
-
   const [form, setForm] = useState({
     date: new Date().toISOString().substring(0, 10),
     libelle: "",
     categorie: "Courses",
     sousCategorie: "",
-    type: "Dépense",
     compte: "Compte courant",
-    compteDestination: "",
-    modePaiement: "Carte bancaire",
     montant: "",
     commentaire: "",
   });
@@ -529,21 +194,12 @@ function importerCSV(event) {
     );
   }, [mouvements]);
 
-
-
-
   function update(field, value) {
     setForm({
       ...form,
       [field]: value,
     });
   }
-
-
-
-
-
-  
 
   function enregistrer(e) {
     e.preventDefault();
@@ -574,9 +230,7 @@ function importerCSV(event) {
       libelle: "",
       categorie: "Courses",
       sousCategorie: "",
-      type: "Dépense",
       compte: "Compte courant",
-      modePaiement: "Carte bancaire",
       montant: "",
       commentaire: "",
     });
@@ -599,29 +253,17 @@ function importerCSV(event) {
   const solde = revenus - depenses;
 
   return (
-  <div
-    style={{
-      maxWidth: "1000px",
-      margin: "auto",
-      padding: "20px",
-      fontFamily: "Arial",
-    }}
-  >
-    <h1>📊 Budget Patrimonial</h1>
+    <div
+      style={{
+        maxWidth: "1000px",
+        margin: "auto",
+        padding: "20px",
+        fontFamily: "Arial",
+      }}
+    >
+      <h1>📊 Budget Patrimonial</h1>
 
-    <div style={{ marginBottom: "20px" }}>
-      <button
-        onClick={() => setOnglet("mouvements")}
-        style={{ marginRight: "10px" }}
-      >
-        Mouvements
-      </button>
-
-
-    </div>
-
-  <>
-  <form onSubmit={enregistrer}>
+      <form onSubmit={enregistrer}>
         <div style={{ marginBottom: 15 }}>
           <label>Date</label>
           <br />
@@ -687,32 +329,6 @@ function importerCSV(event) {
   />
 </div>
 
-<div style={{ marginBottom: 15 }}>
-  <label>Type de mouvement</label>
-  <br />
-
-  <select
-    value={form.type}
-    onChange={(e) =>
-      update("type", e.target.value)
-    }
-  >
-    <option value="Dépense">
-      Dépense
-    </option>
-
-    <option value="Revenu">
-      Revenu
-    </option>
-
-    <option value="Transfert">
-      Transfert entre comptes
-    </option>
-  </select>
-
-</div>
-
-
 
         <div style={{ marginBottom: 15 }}>
           <label>Compte</label>
@@ -728,62 +344,6 @@ function importerCSV(event) {
             ))}
           </select>
         </div>
-<div style={{ marginBottom: 15 }}>
-  <label>Mode de paiement</label>
-  <br />
-
-  <select
-    value={form.modePaiement}
-    onChange={(e) =>
-      update("modePaiement", e.target.value)
-    }
-  >
-    <option value="Carte bancaire">
-      💳 Carte bancaire
-    </option>
-
-    <option value="Virement">
-      🏦 Virement
-    </option>
-
-    <option value="Prélèvement">
-      📄 Prélèvement
-    </option>
-
-    <option value="Espèces">
-      💵 Espèces
-    </option>
-
-    <option value="Chèque">
-      🧾 Chèque
-    </option>
-  </select>
-</div>
-
-       {form.type === "Transfert" && (
-  <div style={{ marginBottom: 15 }}>
-    <label>Compte destination</label>
-    <br />
-
-    <select
-      value={form.compteDestination}
-      onChange={(e) =>
-        update(
-          "compteDestination",
-          e.target.value
-        )
-      }
-    >
-      <option value="">
-        Sélectionner...
-      </option>
-
-      {comptes.map((c) => (
-        <option key={c}>{c}</option>
-      ))}
-    </select>
-  </div>
-)}     
 
         <div style={{ marginBottom: 15 }}>
           <label>Montant</label>
@@ -848,32 +408,6 @@ function importerCSV(event) {
 
       <h2>Mouvements</h2>
 
-  </>
-
-<label
-  style={{
-    display: "inline-block",
-    marginRight: "10px",
-    marginBottom: "20px",
-    backgroundColor: "#1565c0",
-    color: "white",
-    padding: "10px 14px",
-    borderRadius: "6px",
-    cursor: "pointer",
-  }}
->
-  Importer CSV
-
-  <input
-    type="file"
-    accept=".csv,text/csv"
-    onChange={importerCSV}
-    style={{
-      display: "none",
-    }}
-  />
-</label>
-      
       <button
   onClick={() =>
     exporterCSV(mouvements)
@@ -922,13 +456,10 @@ function importerCSV(event) {
             <tr>
               <th>Date</th>
               <th>Libellé</th>
-              <th>Type</th>
               <th>Catégorie</th>
               <th>Sous-catégorie</th>
               <th>Compte</th>
               <th>Montant</th>
-              <th>Mode Paiement</th>
-              <th>CompteDestination</th>
               <th></th>
             </tr>
           </thead>
@@ -938,13 +469,10 @@ function importerCSV(event) {
               <tr key={m.id}>
                 <td>{m.date}</td>
                 <td>{m.libelle}</td>
-                <td>{m.type}</td>
                 <td>{m.categorie}</td>
                 <td>{m.sousCategorie}</td>
                 <td>{m.compte}</td>
-                <td>{m.montant}</td>
-                <td>{m.modePaiement}</td>
-                <td>{m.compteDestination}</td>
+
                 <td
                   style={{
                     color:
